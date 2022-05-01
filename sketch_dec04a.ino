@@ -11,6 +11,7 @@
 #define UPDATES_PER_SECOND 100
 
 bool gReverseDirection = false;
+bool active = false;
 
 
 CRGB leds[NUM_LEDS];
@@ -174,6 +175,13 @@ void ChangePalettePeriodically()
     }
 }
 
+void lightsOff(){
+  for (int i = 0; i < 50; i++){
+    leds[i] = CRGB::Black;
+    FastLED.show();
+    }
+}
+
 // This function fills the palette with totally random colors.
 void SetupTotallyRandomPalette()
 {
@@ -262,13 +270,23 @@ void greenred(){
 
 
 void loop() {
+  while(WiFi.status() != WL_CONNECTED){
+    WiFi.disconnect();
+    if(active)
+      lightsOff();
+    WiFi.reconnect();
+    delay(5000);
+  }
  client.loop();
+ if(cmd != 48 && !active){
+  active = ~active;
+ }
  switch (cmd){
   case 48:
-  for (int i = 0; i < 50; i++){
-    leds[i] = CRGB::Black;
-    FastLED.show();
-    }
+  if(active){
+    lightsOff();
+    active = ~active;
+  }
   break;
   case 65:
   chase();
