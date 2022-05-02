@@ -32,6 +32,7 @@ const char *mqtt_password = "";
 const int mqtt_port = 1883;
 
 int cmd = 0;
+int brightness = BRIGHTNESS;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -69,6 +70,7 @@ void setup() {
 
 void callback(char *topic, byte *payload, unsigned int length) {
   cmd = payload[0];
+  brightness = payload[1];
 }
 
 void chase(){
@@ -270,6 +272,7 @@ void grey(){
 
 
 void loop() {
+
   if (WiFi.status() != WL_CONNECTED) {
      digitalWrite(STATUS_LED,LOW);
      WiFi.disconnect();
@@ -278,7 +281,9 @@ void loop() {
      delay(3000);
      digitalWrite(STATUS_LED,HIGH);
  }
+ 
  client.loop();
+ 
  switch (cmd){
   case 48:
   if (led_state){
@@ -291,6 +296,14 @@ void loop() {
   if (!led_state){
     grey();
     led_state = true; 
+  }
+  break;
+  case 64:
+  if (FastLED.getBrightness() != brightness){
+    if (brightness < 1 || brightness > BRIGHTNESS) {
+      brightness = BRIGHTNESS;
+      }
+    FastLED.setBrightness( brightness );
   }
   break;
   case 65:
