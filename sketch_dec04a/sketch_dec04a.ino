@@ -9,8 +9,10 @@
 #define NUM_LEDS 50
 #define SPARKING 120
 #define UPDATES_PER_SECOND 100
+#define STATUS_LED 12
 
 bool gReverseDirection = false;
+bool led_state = false;
 
 
 CRGB leds[NUM_LEDS];
@@ -35,7 +37,7 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 
 void setup() {
-  pinMode(12,OUTPUT);
+  pinMode(STATUS_LED,OUTPUT);
  FastLED.addLeds<WS2811, DATA_PIN, RGB>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
  FastLED.setBrightness( BRIGHTNESS );
  // Set software serial baud to 115200;
@@ -53,10 +55,9 @@ void setup() {
  while (!client.connected()) {
      String client_id = "esp32-client-";
      client_id += String(WiFi.macAddress());
-  //   Serial.printf("The client %s connects to the public mqtt broker\n", client_id.c_str());
      if (client.connect(client_id.c_str(), mqtt_username, mqtt_password)) {
          Serial.println("Public emqx mqtt broker connected");
-         digitalWrite(12,HIGH);
+         digitalWrite(STATUS_LED,HIGH);
      } else {
          Serial.print("failed with state ");
          Serial.print(client.state());
@@ -257,28 +258,53 @@ void greenred(){
   }
 }
 
+void grey(){
+  for (int i = 0; i < NUM_LEDS; i++){
+    leds[i] = CRGB::Gray;
+  }
+  FastLED.show();
+}
+
 
 
 
 
 void loop() {
+  if (WiFi.status() != WL_CONNECTED) {
+     digitalWrite(STATUS_LED,LOW);
+     WiFi.disconnect();
+     delay(3000);
+     WiFi.begin(ssid, password);
+     delay(3000);
+     digitalWrite(STATUS_LED,HIGH);
+ }
  client.loop();
  switch (cmd){
   case 48:
-  for (int i = 0; i < 50; i++){
-    leds[i] = CRGB::Black;
+  if (led_state){
+    FastLED.clear();
     FastLED.show();
-    }
+    led_state = false; 
+  }
+  break;
+  case 49:
+  if (!led_state){
+    grey();
+    led_state = true; 
+  }
   break;
   case 65:
+  led_state = true; 
   chase();
   break;
   case 66:
+  led_state = true;
   Fire2012();
   FastLED.show(); // display this frame
   FastLED.delay(1000 / FRAMES_PER_SECOND);
   break;
   case 67:
+  led_state = true;
   currentPalette = RainbowColors_p;
   currentBlending = LINEARBLEND;
   ChangePalettePeriodically();
@@ -289,6 +315,7 @@ void loop() {
   FastLED.delay(1000 / UPDATES_PER_SECOND);
   break;
   case 68:
+  led_state = true;
   greenred();
   break;
  }
