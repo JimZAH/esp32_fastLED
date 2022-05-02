@@ -27,6 +27,7 @@ const char* password = "";
 const char* mqtt_broker = "10.145.0.4";
 
 const char *topic = "tele/ring";
+const char *brightness_topic = "tele/ring/set";
 const char *state_topic = "tele/statering";
 const char *mqtt_username = "";
 const char *mqtt_password = "";
@@ -68,11 +69,25 @@ void setup() {
      }
  }
  client.subscribe(topic);
+ client.subscribe(brightness_topic);
 }
 
+
 void callback(char *topic, byte *payload, unsigned int length) {
-  cmd = payload[0];
-  brightness = payload[1];
+  if (strcmp(topic,"tele/ring/set") == 0){
+    brightness = 0;
+    for (int i = 0; i < 2; i++) {
+      if (payload[i] < 48 || payload[i] > 57){
+        continue;
+      }
+      brightness = brightness * 10;
+      brightness = brightness + (payload[i] - 48) * 4;
+    }
+    FastLED.setBrightness( brightness );
+    FastLED.show();
+  } else if (strcmp(topic, "tele/ring") == 0){
+    cmd = payload[0];
+  }
 }
 
 void chase(){
@@ -308,14 +323,6 @@ void loop() {
   if (!led_state){
     grey();
     led_state = true; 
-  }
-  break;
-  case 64:
-  if (FastLED.getBrightness() != brightness){
-    if (brightness < 1 || brightness > BRIGHTNESS) {
-      brightness = BRIGHTNESS;
-      }
-    FastLED.setBrightness( brightness );
   }
   break;
   case 65:
