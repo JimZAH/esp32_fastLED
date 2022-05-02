@@ -27,12 +27,14 @@ const char* password = "";
 const char* mqtt_broker = "10.145.0.4";
 
 const char *topic = "tele/ring";
+const char *state_topic = "tele/statering";
 const char *mqtt_username = "";
 const char *mqtt_password = "";
 const int mqtt_port = 1883;
 
 int cmd = 0;
 int brightness = BRIGHTNESS;
+int lm = 0;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -266,7 +268,12 @@ void grey(){
   FastLED.show();
 }
 
-
+// https://esp32.com/viewtopic.php?t=5288
+int64_t xx_time_get_time() {
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return (tv.tv_sec * 1000LL + (tv.tv_usec / 1000LL));
+}
 
 
 
@@ -282,6 +289,12 @@ void loop() {
  }
  
  client.loop();
+
+ // Send status to broker
+ if (xx_time_get_time() - lm >= 30000){
+  client.publish(state_topic, "Online");
+  lm = xx_time_get_time();
+ }
  
  switch (cmd){
   case 48:
