@@ -139,7 +139,6 @@ void Fire2012()
 
 void FillLEDsFromPaletteColors( uint8_t colorIndex)
 {
-    uint8_t brightness = BRIGHTNESS;
     
     for( int i = 0; i < NUM_LEDS; ++i) {
         leds[i] = ColorFromPalette( currentPalette, colorIndex, brightness, currentBlending);
