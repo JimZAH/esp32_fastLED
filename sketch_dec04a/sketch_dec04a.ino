@@ -40,36 +40,40 @@ int lm = 0;
 WiFiClient espClient;
 PubSubClient client(espClient);
 
+void mqttClientConnect(){
+  client.setServer(mqtt_broker, mqtt_port);
+  client.setCallback(callback);
+  while (!client.connected()) {
+    String client_id = "esp32-client-";
+    client_id += String(WiFi.macAddress());
+    if (client.connect(client_id.c_str(), mqtt_username, mqtt_password)) {
+      Serial.println("Public emqx mqtt broker connected");
+      digitalWrite(STATUS_LED,HIGH);
+    } else {
+      Serial.print("failed with state ");
+      Serial.print(client.state());
+      delay(2000);
+    }
+  }
+  client.subscribe(topic);
+  client.subscribe(brightness_topic);
+}
+
 void setup() {
   pinMode(STATUS_LED,OUTPUT);
- FastLED.addLeds<WS2811, DATA_PIN, RGB>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
- FastLED.setBrightness( BRIGHTNESS );
- // Set software serial baud to 115200;
- Serial.begin(115200);
- // connecting to a WiFi network
- WiFi.begin(ssid, password);
- while (WiFi.status() != WL_CONNECTED) {
-     delay(500);
-     Serial.println("Connecting to WiFi..");
- }
- Serial.println("Connected to the WiFi network");
- //connecting to a mqtt broker
- client.setServer(mqtt_broker, mqtt_port);
- client.setCallback(callback);
- while (!client.connected()) {
-     String client_id = "esp32-client-";
-     client_id += String(WiFi.macAddress());
-     if (client.connect(client_id.c_str(), mqtt_username, mqtt_password)) {
-         Serial.println("Public emqx mqtt broker connected");
-         digitalWrite(STATUS_LED,HIGH);
-     } else {
-         Serial.print("failed with state ");
-         Serial.print(client.state());
-         delay(2000);
-     }
- }
- client.subscribe(topic);
- client.subscribe(brightness_topic);
+  FastLED.addLeds<WS2811, DATA_PIN, RGB>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
+  FastLED.setBrightness( BRIGHTNESS );
+  // Set software serial baud to 115200;
+  Serial.begin(115200);
+  // connecting to a WiFi network
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.println("Connecting to WiFi..");
+  }
+  Serial.println("Connected to the WiFi network");
+  //connecting to a mqtt broker
+  mqttClientConnect();
 }
 
 
@@ -283,6 +287,13 @@ void grey(){
   FastLED.show();
 }
 
+void lavender(){
+  for (int i = 0; i < NUM_LEDS; i++){
+    leds[i] = CRGB::Lavender;
+  }
+  FastLED.show();
+}
+
 // https://esp32.com/viewtopic.php?t=5288
 int64_t xx_time_get_time() {
   struct timeval tv;
@@ -294,13 +305,14 @@ int64_t xx_time_get_time() {
 
 void loop() {
 
-  if (WiFi.status() != WL_CONNECTED) {
+  if (WiFi.status() != WL_CONNECTED || !client.connected()) {
      digitalWrite(STATUS_LED,LOW);
+     client.disconnect();
      WiFi.disconnect();
      delay(3000);
      WiFi.begin(ssid, password);
      delay(3000);
-     digitalWrite(STATUS_LED,HIGH);
+     mqttClientConnect();
  }
  
  client.loop();
@@ -323,6 +335,12 @@ void loop() {
   if (!led_state){
     grey();
     led_state = true; 
+  }
+  break;
+  case 50:
+  if (!led_state){
+    lavender();
+    led_state = true;
   }
   break;
   case 65:
