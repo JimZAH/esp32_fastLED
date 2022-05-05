@@ -287,9 +287,9 @@ void grey(){
   FastLED.show();
 }
 
-void lavender(){
+void green(){
   for (int i = 0; i < NUM_LEDS; i++){
-    leds[i] = CRGB::Lavender;
+    leds[i] = CRGB::Green;
   }
   FastLED.show();
 }
@@ -339,7 +339,7 @@ void loop() {
   break;
   case 50:
   if (!led_state){
-    lavender();
+    green();
     led_state = true;
   }
   break;
